@@ -6,5 +6,5 @@ import (
 )
 
 func Handler(w http.ResponseWriter, r *http.Request) {
-    fmt.Fprintf(w, "Hello from a Go function!")
+    fmt.Fprintf(w, "Hello from a Go function2!")
 }
