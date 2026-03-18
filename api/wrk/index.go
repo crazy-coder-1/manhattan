@@ -7,8 +7,7 @@ import (
 )
 
 func Handler(w http.ResponseWriter, r *http.Request) {
-    json.NewEncoder(w).Encode(map[string]string {
+	json.NewEncoder(w).Encode(map[string]string {
 		"message": utils.Greet(", Go Wrk is up"),
 	})
-    // fmt.Fprintf(w, "Hello from a Go function2!")
 }
