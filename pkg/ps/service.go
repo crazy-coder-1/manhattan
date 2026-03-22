@@ -1,11 +1,15 @@
 package ps
 
 import (
+	"io"
+	"net/http"
 	"os"
-    "github.com/shirou/gopsutil/v4/cpu"
-    "github.com/shirou/gopsutil/v4/mem"
-    "github.com/shirou/gopsutil/v4/host"
-    "github.com/shirou/gopsutil/v4/process"
+
+	"github.com/shirou/gopsutil/v4/cpu"
+	"github.com/shirou/gopsutil/v4/host"
+	"github.com/shirou/gopsutil/v4/mem"
+	"github.com/shirou/gopsutil/v4/net"
+	"github.com/shirou/gopsutil/v4/process"
 )
 
 type PSService interface {
@@ -14,6 +18,7 @@ type PSService interface {
 	GetCPUInfo() ([]*CPUInfo, error)
 	GetProcessInfo() ([]*ProcessInfo, error)
 	GetUsageInfo() (*UsageInfo, error)
+	GetNetworkInfo() (*NetworkInfo, error)
 }
 
 type psService struct {
@@ -22,7 +27,7 @@ type psService struct {
 func NewPSService() PSService {
 	return &psService{}
 }
-func (s *psService)GetHostInfo() (*HostInfo, error) {
+func (s *psService) GetHostInfo() (*HostInfo, error) {
 	info, err := host.Info()
 
 	if err != nil {
@@ -31,9 +36,9 @@ func (s *psService)GetHostInfo() (*HostInfo, error) {
 
 	return &HostInfo{
 		HostName: info.Hostname,
-		OS: info.OS,
+		OS:       info.OS,
 		Platform: info.Platform,
-		Uptime: info.Uptime,
+		Uptime:   info.Uptime,
 		BootTime: info.BootTime,
 	}, nil
 }
@@ -47,13 +52,13 @@ func (s *psService) GetMemoryInfo() (*MemoryInfo, error) {
 
 	return &MemoryInfo{
 		Total: v.Total,
-		Used: v.Used,
-		Free: v.Free,
+		Used:  v.Used,
+		Free:  v.Free,
 		Usage: v.UsedPercent,
 	}, nil
 }
 
-func (s *psService)GetCPUInfo() ([]*CPUInfo, error) {
+func (s *psService) GetCPUInfo() ([]*CPUInfo, error) {
 	// CPU usage percentage (per core)
 	percent, err := cpu.Percent(0, true)
 
@@ -80,7 +85,7 @@ func (s *psService)GetCPUInfo() ([]*CPUInfo, error) {
 	return res, nil
 }
 
-func (s *psService)GetProcessInfo() ([]*ProcessInfo, error) {
+func (s *psService) GetProcessInfo() ([]*ProcessInfo, error) {
 	processes, err := process.Processes()
 
 	if err != nil {
@@ -88,24 +93,23 @@ func (s *psService)GetProcessInfo() ([]*ProcessInfo, error) {
 	}
 	n := len(processes)
 	res := make([]*ProcessInfo, n)
-	
+
 	for i := range n {
 		name, _ := processes[i].Name()
-        cpu, _ := processes[i].CPUPercent()
-        mem, _ := processes[i].MemoryPercent()
+		cpu, _ := processes[i].CPUPercent()
+		mem, _ := processes[i].MemoryPercent()
 		res[i] = &ProcessInfo{
-			PID: processes[i].Pid,
+			PID:  processes[i].Pid,
 			Name: name,
-			CPU: cpu,
-			Mem: mem,
+			CPU:  cpu,
+			Mem:  mem,
 		}
 	}
-	return res, nil	
+	return res, nil
 }
 
+func (s *psService) GetUsageInfo() (*UsageInfo, error) {
 
-func (s *psService)GetUsageInfo() (*UsageInfo, error) {
-	
 	pid := int32(os.Getpid())
 	proc, err := process.NewProcess(pid)
 
@@ -117,10 +121,52 @@ func (s *psService)GetUsageInfo() (*UsageInfo, error) {
 	cpuPct, _ := proc.CPUPercent()
 
 	return &UsageInfo{
-		PID: pid,
-		RSS: memInfo.RSS,
-		VMS: memInfo.VMS,
+		PID:         pid,
+		RSS:         memInfo.RSS,
+		VMS:         memInfo.VMS,
 		MemoryUsage: float64(memPct),
-		CPUUsage: cpuPct,
-	}, nil	
+		CPUUsage:    cpuPct,
+	}, nil
+}
+
+func (s *psService) GetNetworkInfo() (*NetworkInfo, error) {
+	interfaces, err := net.Interfaces()
+	if err != nil {
+		return nil, err
+	}
+	intrfs := []NetworkInterface{}
+	for _, iface := range interfaces {
+		addresses := []string{}
+		for _, addr := range iface.Addrs {
+			addresses = append(addresses, addr.Addr)
+		}
+		intrfs = append(intrfs, NetworkInterface{
+			Name:            iface.Name,
+			MTU:             iface.MTU,
+			HardwareAddress: iface.HardwareAddr,
+			Flags:           iface.Flags,
+			Addresses: addresses,
+		})
+	}
+
+	publicIP, _ := getPublicIP()
+
+	return &NetworkInfo{
+		PublicIP:   publicIP,
+		Interfaces: intrfs,
+	}, nil
+}
+
+func getPublicIP() (string, error) {
+	resp, err := http.Get("https://api.ipify.org")
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+
+	ip, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return "", err
+	}
+	return string(ip), nil
 }

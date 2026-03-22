@@ -35,3 +35,16 @@ type UsageInfoResponse struct {
 	MemoryUsage float64 `json:"memory-usage"`
 	CPUUsage    float64 `json:"cpu-usage"`
 }
+
+type NetworkInterfaceResponse struct {
+	Name            string   `json:"name"`
+	MTU             int      `json:"mtu"`
+	HardwareAddress string   `json:"hardware-address"`
+	Flags           []string `json:"flags"`
+	Addresses       []string `json:"addresses"`
+}
+
+type NetworkInfoResponse struct {
+	PublicIP   string                     `json:"public-ip"`
+	Interfaces []NetworkInterfaceResponse `json:"interfaces"`
+}

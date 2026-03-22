@@ -2,9 +2,9 @@ package ps
 
 type HostInfo struct {
 	HostName string
-	OS string
+	OS       string
 	Platform string
-	Uptime uint64
+	Uptime   uint64
 	BootTime uint64
 }
 
@@ -22,16 +22,29 @@ type CPUInfo struct {
 }
 
 type UsageInfo struct {
-	PID int32
-	RSS uint64
-	VMS uint64
+	PID         int32
+	RSS         uint64
+	VMS         uint64
 	MemoryUsage float64
-	CPUUsage float64
+	CPUUsage    float64
 }
 
 type ProcessInfo struct {
-	PID int32
+	PID  int32
 	Name string
-	CPU float64
-	Mem float32
+	CPU  float64
+	Mem  float32
+}
+
+type NetworkInterface struct {
+	Name            string
+	MTU             int
+	HardwareAddress string
+	Flags           []string
+	Addresses       []string
+}
+
+type NetworkInfo struct {
+	PublicIP   string
+	Interfaces []NetworkInterface
 }
