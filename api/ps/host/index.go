@@ -16,6 +16,7 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(utils.ErrorResponse(
 			500, err.Error(),
 		))
+		return
 	}
 	json.NewEncoder(w).Encode(utils.SuccessResponse(utils.SuccessResponse(&ps.HostInfoResponse{
 		HostName: hostInfo.HostName,
