@@ -21,8 +21,10 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 
 	method := query.Get("m")
 	if method == "" {
-		method = "GET"
+		method = "get"
 	}
+
+	payloadStr := query.Get("p") // ?p={"key":"value"}
 
 	connectionsStr := query.Get("c")
 	if connectionsStr == "" {
@@ -49,7 +51,11 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	apiDataB := wrk.ApiDataBuilder{}
-	apiData := apiDataB.SetUrl(endpoint).SetMethod(method).Build()
+	apiData := apiDataB.
+		SetUrl(endpoint).
+		SetMethod(method).
+		SetBody(payloadStr).
+		Build()
 
 	ctx := r.Context()
 	wrkResult, err := svc.Wrk(ctx, apiData, uint(connections), uint(duration))

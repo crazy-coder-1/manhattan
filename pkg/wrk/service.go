@@ -1,6 +1,7 @@
 package wrk
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"net/http"
@@ -86,7 +87,27 @@ func Worker(ctx context.Context, client *http.Client, apiData *ApiData, totalHit
 			mu.Unlock()
 			return
 		default:
-			resp, err := client.Get(apiData.Url)
+			// resp, err := client.Get(apiData.Url)
+			var resp *http.Response
+			var err error
+
+			if apiData.Method == "POST" {
+				body := []byte(fmt.Sprintf("%v", apiData.Body))
+
+				req, reqErr := http.NewRequest("POST", apiData.Url, bytes.NewBuffer(body))
+				if reqErr != nil {
+					cntTotal++
+					cntFailed++
+					continue
+				}
+
+				req.Header.Set("Content-Type", "application/json")
+
+				resp, err = client.Do(req)
+			} else {
+				resp, err = client.Get(apiData.Url)
+			}
+
 			cntTotal++
 			if err != nil || ( resp != nil && resp.StatusCode >= 400) {
 				cntFailed++
